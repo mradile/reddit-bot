@@ -1,0 +1,15 @@
+#IDE files
+.idea
+
+#coverage output
+*.out
+
+#build artefacts
+release
+
+#test files for development
+.envrc
+.env
+t_*
+
+rice-box.go

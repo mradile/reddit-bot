@@ -1,0 +1,73 @@
+stages:
+  - build
+  - docker
+
+.go_before: &go_before
+  - go mod download
+  - go get -u github.com/golang/mock/mockgen
+  - go get -u honnef.co/go/tools/cmd/staticcheck
+  - go get -u github.com/mgechev/revive
+  - go get -u github.com/GeertJohan/go.rice/rice
+
+.go_build: &go_build
+  - make gen
+  - make vet
+  - make lint
+  - make staticcheck
+  - make cover
+  - make build-linux
+
+build-go:
+  stage: build
+  image:  golang:1.16-buster
+  before_script:
+    - *go_before
+  script:
+    - *go_build
+  artifacts:
+    expire_in: 4 week
+    paths:
+      - release
+  except:
+    - tags
+
+build-go-release:
+  stage: build
+  image:  golang:1.16-buster
+  before_script:
+    - *go_before
+  script:
+    - *go_build
+  artifacts:
+    expire_in: never
+    paths:
+      - release
+  only:
+    - tags
+
+
+docker-build:
+  stage: docker
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+  except:
+    - tags
+
+docker-release:
+  stage: docker
+  image: docker:stable
+  services:
+    - docker:dind
+  script:
+    - echo $CI_JOB_TOKEN | docker login -u gitlab-ci-token --password-stdin $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG $CI_REGISTRY_IMAGE:latest
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - tags
