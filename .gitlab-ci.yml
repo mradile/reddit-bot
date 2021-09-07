@@ -19,7 +19,7 @@ stages:
 
 build-go:
   stage: build
-  image:  golang:1.16-buster
+  image:  golang:1.17-buster
   before_script:
     - *go_before
   script:
@@ -33,7 +33,7 @@ build-go:
 
 build-go-release:
   stage: build
-  image:  golang:1.16-buster
+  image:  golang:1.17-buster
   before_script:
     - *go_before
   script:
